@@ -1,0 +1,19 @@
+{
+"name": "where2go",
+"version": "1.0.0",
+"private": true,
+"description": "Global events aggregator with AI-powered scraping",
+"scripts": {
+"setup": "npm install && cd apps/web && npm install",
+"dev": "cd apps/web && npm run dev",
+"build": "cd apps/web && npm run build",
+"start": "cd apps/web && npm run start",
+"scraper": "cd apps/scraper && python background_worker.py",
+"deploy": "vercel --prod"
+},
+"workspaces": ["apps/", "packages/"],
+"devDependencies": {
+"@types/node": "^20.12.7",
+"typescript": "^5.4.5"
+}
+}
