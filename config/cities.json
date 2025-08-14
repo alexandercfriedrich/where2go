@@ -1,0 +1,35 @@
+{
+"cities": {
+"wien": {
+"name": "Wien",
+"country": "Austria",
+"timezone": "Europe/Vienna",
+"sources": [
+"https://events.wien.info/de/",
+"https://www.meinbezirk.at/event/wien/list/today",
+"https://www.eventbrite.at/d/austria--wien/events--today/"
+],
+"popular": true
+},
+"berlin": {
+"name": "Berlin",
+"country": "Germany",
+"timezone": "Europe/Berlin",
+"sources": [
+"https://www.eventbrite.de/d/germany--berlin/events--today/",
+"https://www.berlin.de/events/"
+],
+"popular": true
+},
+"paris": {
+"name": "Paris",
+"country": "France",
+"timezone": "Europe/Paris",
+"sources": [
+"https://www.eventbrite.fr/d/france--paris/events--today/",
+"https://www.sortiraparis.com/que-faire-aujourd-hui"
+],
+"popular": true
+}
+}
+}
