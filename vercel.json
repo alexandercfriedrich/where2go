@@ -1,0 +1,21 @@
+{
+"version": 2,
+"name": "where2go",
+"buildCommand": "cd apps/web && npm run build",
+"outputDirectory": "apps/web/.next",
+"installCommand": "npm run setup",
+"routes": [
+{ "src": "/api/(.)", "dest": "/apps/web/app/api/$1" },
+{ "src": "/(.)", "dest": "/apps/web/$1" }
+],
+"env": {
+"UPSTASH_REDIS_URL": "@upstash-redis-url",
+"UPSTASH_REDIS_TOKEN": "@upstash-redis-token",
+"VERCEL_AI_TOKEN": "@vercel-ai-token",
+"FIRECRAWL_API_KEY": "@firecrawl-api-key"
+},
+"functions": {
+"apps/web/app/api/events/cached/[city]/route.ts": { "maxDuration": 10 }
+}
+}
+
