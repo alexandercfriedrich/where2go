@@ -20,12 +20,12 @@ class OptimizedAIExtractor:
 
     async def extract_events_chunked(self, html_chunks: List[str], city: str) -> List[Dict]:
         """
-        Verarbeite HTML in Chunks, extrahiere Events via LLM.
-        Gibt am Ende eine de-duplizierte Liste zurück.
+        Verarbeitet mehrere HTML-Chunks und führt Event-Extraktion via LLM durch.
+        Gibt eine de-duplizierte Liste zurück.
         """
         events: List[Dict] = []
 
-        # Fallback ohne LLM: nichts crashen lassen
+        # Fallback ohne LLM-Key: gib leere Liste zurück (nicht crashen)
         if not self.client:
             return []
 
@@ -41,17 +41,16 @@ class OptimizedAIExtractor:
         Ein einzelnes HTML-Chunk mit dem Modell verarbeiten.
         Erwartet ein reines JSON-Array als Antwort.
         """
-        prompt = f"""
-Return ONLY a JSON array of events with objects using these fields:
-"title", "category", "date", "time", "venue", "price", "website".
-City: {city}
-Rules:
-- Output must be a pure JSON array (no comments, no explanation).
-- If nothing is found, return [].
-
-HTML (truncated):
-{html[:5000]}
-"""
+        prompt = (
+            "Return ONLY a JSON array of events with objects using these fields:\n"
+            "\"title\", \"category\", \"date\", \"time\", \"venue\", \"price\", \"website\".\n"
+            f"City: {city}\n"
+            "Rules:\n"
+            "- Output must be a pure JSON array (no comments, no explanation).\n"
+            "- If nothing is found, return [].\n\n"
+            "HTML (truncated):\n"
+            f"{html[:5000]}\n"
+        )
 
         try:
             # OpenAI v1-SDK Aufruf in Thread ausführen, um async kompatibel zu bleiben
@@ -64,10 +63,9 @@ HTML (truncated):
             )
             txt = resp.choices[0].message.content.strip()  # type: ignore
 
-            # Versuche JSON zu parsen
+            # JSON parsen
             data = json.loads(txt)
             if isinstance(data, list):
-                # Sanity-Cleaning der Felder
                 cleaned: List[Dict] = []
                 for e in data:
                     cleaned.append({
@@ -80,10 +78,9 @@ HTML (truncated):
                         "website": (e.get("website") or "").strip(),
                     })
                 return cleaned
-            else:
-                return []
+            return []
         except json.JSONDecodeError:
-            # Falls das Modell Text um das JSON herum geliefert hat, versuche simpel zu extrahieren
+            # Falls das Modell Text um das JSON geliefert hat → einfache Klammer-Extraktion
             try:
                 start = txt.find("[")
                 end = txt.rfind("]")
@@ -101,4 +98,17 @@ HTML (truncated):
 
     def dedup(self, items: List[Dict]) -> List[Dict]:
         """
-        Entferne Duplikate (Titel + Venue + Datum
+        Entfernt Duplikate basierend auf (title, venue, date).
+        """
+        seen = set()
+        out: List[Dict] = []
+        for e in items:
+            key = (
+                (e.get("title") or "").lower(),
+                (e.get("venue") or "").lower(),
+                (e.get("date") or "").strip(),
+            )
+            if key not in seen and (e.get("title") or "").strip():
+                seen.add(key)
+                out.append(e)
+        return out
