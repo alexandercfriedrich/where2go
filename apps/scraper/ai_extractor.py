@@ -76,21 +76,4 @@ HTML (truncated):
                         "time": (e.get("time") or "").strip(),
                         "venue": (e.get("venue") or "").strip(),
                         "price": (e.get("price") or "").strip(),
-                        "website": (e.get("website") or "").strip(),
-                    })
-                return cleaned
-            else:
-                return []
-        except json.JSONDecodeError:
-            # Falls das Modell Text um das JSON herum geliefert hat, versuche simpel zu extrahieren
-            try:
-                start = txt.find("[")
-                end = txt.rfind("]")
-                if start != -1 and end != -1 and end > start:
-                    snippet = txt[start : end + 1]
-                    data = json.loads(snippet)
-                    return data if isinstance(data, list) else []
-            except Exception:
-                return []
-            return []
-        except Exception
+                        "website": (e.get("website
