@@ -63,6 +63,7 @@ return (
 <h1 className="text-3xl font-bold capitalize">{city} Events</h1>
 {bgLoading ? <span className="text-blue-600">Updating…</span> : null}
 </div>
+  
   {loading ? (
     <LoadingSkeleton />
   ) : events.length === 0 ? (
