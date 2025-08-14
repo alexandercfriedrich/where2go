@@ -3,20 +3,22 @@ import json
 import os
 from typing import List, Dict
 
-# OpenAI v1 Client
+# Fallback-kompatibel: funktionale API
+OPENAI_AVAILABLE = False
 try:
-    from openai import OpenAI
+    import openai  # openai==1.30.1
     OPENAI_AVAILABLE = True
 except Exception:
-    OPENAI_AVAILABLE = False
-    OpenAI = None  # type: ignore
+    openai = None  # type: ignore
 
 
 class OptimizedAIExtractor:
     def __init__(self):
         # Nutzt OpenAI- oder Vercel-AI-Gateway-Key im gleichen Env-Var
         self.api_key = os.getenv("VERCEL_AI_TOKEN", "")
-        self.client = OpenAI(api_key=self.api_key) if (OPENAI_AVAILABLE and self.api_key) else None
+        if OPENAI_AVAILABLE and self.api_key:
+            # Setze global den API-Key; keine Client-Init (vermeidet proxies-Problem)
+            openai.api_key = self.api_key  # type: ignore
 
     async def extract_events_chunked(self, html_chunks: List[str], city: str) -> List[Dict]:
         """
@@ -25,8 +27,8 @@ class OptimizedAIExtractor:
         """
         events: List[Dict] = []
 
-        # Fallback ohne LLM-Key: gib leere Liste zurück (nicht crashen)
-        if not self.client:
+        # Fallback ohne LLM-Key/Modul: gib leere Liste zurück (nicht crashen)
+        if not (OPENAI_AVAILABLE and self.api_key):
             return []
 
         for idx, chunk in enumerate(html_chunks):
@@ -53,9 +55,9 @@ class OptimizedAIExtractor:
         )
 
         try:
-            # OpenAI v1-SDK Aufruf in Thread ausführen, um async kompatibel zu bleiben
+            # Aufruf der funktionalen API im Thread, um Async nicht zu blockieren
             resp = await asyncio.to_thread(
-                self.client.chat.completions.create,  # type: ignore
+                openai.chat.completions.create,  # type: ignore
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.2,
@@ -80,19 +82,18 @@ class OptimizedAIExtractor:
                 return cleaned
             return []
         except json.JSONDecodeError:
-            # Falls das Modell Text um das JSON geliefert hat → einfache Klammer-Extraktion
+            # Fallback: JSON aus Text herausziehen
             try:
-                start = txt.find("[")
-                end = txt.rfind("]")
+                start = txt.find("[")  # type: ignore
+                end = txt.rfind("]")   # type: ignore
                 if start != -1 and end != -1 and end > start:
-                    snippet = txt[start : end + 1]
+                    snippet = txt[start : end + 1]  # type: ignore
                     data = json.loads(snippet)
                     return data if isinstance(data, list) else []
             except Exception:
                 return []
             return []
         except Exception as e:
-            # Keine harten Fehler, damit der Job weiterläuft
             print(f"AI extraction error (chunk {chunk_id}): {repr(e)}")
             return []
 
