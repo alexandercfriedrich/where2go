@@ -9,12 +9,14 @@ cache-cities:
 runs-on: ubuntu-latest
 strategy:
 max-parallel: 4
+fail-fast: false
 matrix:
 city: [wien, berlin, paris, london, madrid, rome]
-steps:
-- name: Checkout
-uses: actions/checkout@v4
 
+text
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
 
   - name: Setup Python
     uses: actions/setup-python@v4
@@ -22,7 +24,9 @@ uses: actions/checkout@v4
       python-version: '3.11'
 
   - name: Install Python deps
-    run: pip install -r apps/scraper/requirements.txt
+    run: |
+      python -m pip install --upgrade pip
+      pip install -r apps/scraper/requirements.txt
 
   - name: Cache Events
     env:
@@ -30,4 +34,5 @@ uses: actions/checkout@v4
       UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}
       VERCEL_AI_TOKEN: ${{ secrets.VERCEL_AI_TOKEN }}
       FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
-    run: python apps/scraper/cache_city.py --city ${{ matrix.city }}
+    run: |
+      python apps/scraper/cache_city.py --city ${{ matrix.city }}
