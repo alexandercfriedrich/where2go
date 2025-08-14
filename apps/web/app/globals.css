@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+apps/web/app/page.tsx
+export default function Home() {
+return (
+<div className="max-w-5xl mx-auto p-8">
+<h1 className="text-3xl font-bold mb-4">WHERE2GO</h1>
+<p>Wähle eine Stadt in der URL, z. B. /wien</p>
+</div>
+);
+}
