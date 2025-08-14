@@ -32,7 +32,6 @@ setLoading(true);
 const res = await fetch(/api/events/cached/${c});
 if (!res.ok) throw new Error(API ${res.status});
 const data = await res.json();
-
   setEvents(data.events || []);
   setLastUpdated(data.lastUpdated || '');
   setLoading(false);
@@ -44,7 +43,7 @@ const data = await res.json();
   console.error('Failed to load cached events', err);
   setLoading(false);
 }
-  }
+}
 
 async function refresh(c: string) {
 try {
@@ -64,5 +63,24 @@ return (
 <h1 className="text-3xl font-bold capitalize">{city} Events</h1>
 {bgLoading ? <span className="text-blue-600">Updating…</span> : null}
 </div>
-  );
+  {loading ? (
+    <LoadingSkeleton />
+  ) : events.length === 0 ? (
+    <div>Keine Events gefunden. Wird aktualisiert…</div>
+  ) : (
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {events.map((e, i) => (
+        <EventCard key={i} event={e} />
+      ))}
+    </div>
+  )}
+
+  {lastUpdated && (
+    <p className="text-gray-500 mt-4 text-sm">
+      Last updated: {new Date(lastUpdated).toLocaleString()}
+    </p>
+  )}
+</div>
+);
 }
+
