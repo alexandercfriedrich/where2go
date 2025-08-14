@@ -1,0 +1,49 @@
+name: Cache Popular Cities
+on:
+schedule:
+- cron: '0 */2 * * *'
+workflow_dispatch:
+jobs:
+cache-cities:
+runs-on: ubuntu-latest
+strategy:
+max-parallel: 4
+matrix:
+city: [wien, berlin, paris, london, madrid, rome]
+steps:
+- uses: actions/checkout@v4
+- uses: actions/setup-python@v4
+with:
+python-version: '3.11'
+- name: Install Python deps
+run: pip install -r apps/scraper/requirements.txt
+- name: Cache Events
+env:
+UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
+UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}
+VERCEL_AI_TOKEN: ${{ secrets.VERCEL_AI_TOKEN }}
+FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+run: python apps/scraper/cache_city.py --city ${{ matrix.city }}
+
+vercel.json (Root)
+{
+"version": 2,
+"name": "where2go",
+"buildCommand": "cd apps/web && npm run build",
+"outputDirectory": "apps/web/.next",
+"installCommand": "npm run setup",
+"routes": [
+{ "src": "/api/(.)", "dest": "/apps/web/app/api/$1" },
+{ "src": "/(.)", "dest": "/apps/web/$1" }
+],
+"env": {
+"UPSTASH_REDIS_URL": "@upstash-redis-url",
+"UPSTASH_REDIS_TOKEN": "@upstash-redis-token",
+"VERCEL_AI_TOKEN": "@vercel-ai-token",
+"FIRECRAWL_API_KEY": "@firecrawl-api-key"
+},
+"functions": {
+"apps/web/app/api/events/cached/[city]/route.ts": { "maxDuration": 10 }
+}
+}
+
