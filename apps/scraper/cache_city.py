@@ -14,10 +14,11 @@ load_dotenv()
 
 class CityCache:
     def __init__(self):
-        # Upstash Redis via URL/TOKEN
         url = os.getenv("UPSTASH_REDIS_URL")
         if not url:
             raise RuntimeError("UPSTASH_REDIS_URL missing")
+        # Hinweis: Für Upstash REST-Token wird in diesem Skript kein separater Parameter benötigt,
+        # da redis.from_url(url) mit rediss://… auskommt.
         self.redis = redis.from_url(url)
         self.scraper = ScrapingEngine()
         self.ai = OptimizedAIExtractor()
@@ -35,17 +36,22 @@ class CityCache:
 
         print(f"Scraping sources for {city}...")
         pages = await self.scraper.scrape_city_sources(cfg)
+        if not pages:
+            print(f"No pages scraped for {city}")
+            pages = []
 
         print(f"Extracting events with AI for {city}...")
         events = await self.ai.extract_events_chunked(pages, city)
+        if events is None:
+            events = []
 
         today = datetime.now().strftime("%Y-%m-%d")
         key = f"events:{city.lower()}:{today}"
         status = f"status:{city.lower()}:lastUpdated"
-        ttl = 7200 if cfg.get("popular") else 21600
+        ttl = 7200 if cfg.get("popular") else 21600  # 2h / 6h
 
-        # Store JSON strings
-        self.redis.setex(key, ttl, json.dumps(events))
+        # Persistiere als JSON-String
+        self.redis.setex(key, ttl, json.dumps(events, ensure_ascii=False))
         self.redis.setex(status, ttl, datetime.now().isoformat())
 
         print(f"Cached {len(events)} events for {city}")
