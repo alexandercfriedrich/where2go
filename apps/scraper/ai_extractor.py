@@ -63,11 +63,12 @@ HTML (truncated):
                 max_tokens=1200,
             )
             txt = resp.choices[0].message.content.strip()  # type: ignore
+
             # Versuche JSON zu parsen
             data = json.loads(txt)
             if isinstance(data, list):
                 # Sanity-Cleaning der Felder
-                cleaned = []
+                cleaned: List[Dict] = []
                 for e in data:
                     cleaned.append({
                         "title": (e.get("title") or "").strip(),
@@ -76,4 +77,28 @@ HTML (truncated):
                         "time": (e.get("time") or "").strip(),
                         "venue": (e.get("venue") or "").strip(),
                         "price": (e.get("price") or "").strip(),
-                        "website": (e.get("website
+                        "website": (e.get("website") or "").strip(),
+                    })
+                return cleaned
+            else:
+                return []
+        except json.JSONDecodeError:
+            # Falls das Modell Text um das JSON herum geliefert hat, versuche simpel zu extrahieren
+            try:
+                start = txt.find("[")
+                end = txt.rfind("]")
+                if start != -1 and end != -1 and end > start:
+                    snippet = txt[start : end + 1]
+                    data = json.loads(snippet)
+                    return data if isinstance(data, list) else []
+            except Exception:
+                return []
+            return []
+        except Exception as e:
+            # Keine harten Fehler, damit der Job weiterläuft
+            print(f"AI extraction error (chunk {chunk_id}): {repr(e)}")
+            return []
+
+    def dedup(self, items: List[Dict]) -> List[Dict]:
+        """
+        Entferne Duplikate (Titel + Venue + Datum
